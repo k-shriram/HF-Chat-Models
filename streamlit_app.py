@@ -16,8 +16,8 @@ from langchain.schema import (
 load_dotenv()
 
 # Set streamlit page configuration
-st.set_page_config(page_title="ChatBot Starter")
-st.title("ChatBot Starter")
+st.set_page_config(page_title="Hugging Face Open Source Chat Demo")
+st.title("Open Source LLM Chat Demo")
 
 # Extract query parameters
 query_params = st.experimental_get_query_params()
