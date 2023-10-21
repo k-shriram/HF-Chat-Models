@@ -1,8 +1,8 @@
 # Import required libraries
 from dotenv import load_dotenv
 from itertools import zip_longest
-
-import streamlit as st
+import requests
+import streamlit as st  
 from streamlit_chat import message
 
 from langchain.chat_models import ChatOpenAI
@@ -11,6 +11,14 @@ from langchain.schema import (
     HumanMessage,
     AIMessage
 )
+
+# HuggingFace API KEY input
+API_KEY = "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"
+
+# HuggingFace API inference URL.
+API_URL = "https://hbmffa2mp0q2rzmg.us-east-1.aws.endpoints.huggingface.cloud"
+
+headers = {"Authorization": f"Bearer {API_KEY}"}
 
 # Load environment variables
 load_dotenv()
@@ -33,12 +41,6 @@ if 'past' not in st.session_state:
 if 'entered_prompt' not in st.session_state:
     st.session_state['entered_prompt'] = ""  # Store the latest user input
 
-# Initialize the ChatOpenAI model
-chat = ChatOpenAI(
-    temperature=0.5,
-    model_name="gpt-3.5-turbo",
-    openai_api_key=OPENAI_API_KEY   
-)
 
 
 def build_message_list():
@@ -46,19 +48,17 @@ def build_message_list():
     Build a list of messages including system, human and AI messages.
     """
     # Start zipped_messages with the SystemMessage
-    zipped_messages = [SystemMessage(
-        content="You are a helpful AI assistant talking with a human. If you do not know an answer, just say 'I don't know', do not make up an answer.")]
+    past_user_inputs =[]
+    past_generated_responses = []
 
     # Zip together the past and generated messages
     for human_msg, ai_msg in zip_longest(st.session_state['past'], st.session_state['generated']):
         if human_msg is not None:
-            zipped_messages.append(HumanMessage(
-                content=human_msg))  # Add user messages
+            past_user_inputs.append(human_msg)  # Add user messages
         if ai_msg is not None:
-            zipped_messages.append(
-                AIMessage(content=ai_msg))  # Add AI messages
+            past_generated_responses.append(ai_msg)  # Add AI messages
 
-    return zipped_messages
+    return {"inputs": human_msg,"parameters":{"temperature":0.1,"max_new_tokens":512}}
 
 
 def generate_response():
@@ -68,10 +68,10 @@ def generate_response():
     # Build the list of messages
     zipped_messages = build_message_list()
 
-    # Generate response using the chat model
-    ai_response = chat(zipped_messages)
-
-    return ai_response.content
+    # Query the API
+    ai_response = requests.post(API_URL, headers=headers, json=zipped_messages)
+  
+    return ai_response.json()[0]['generated_text']
 
 
 # Define function to submit user input
@@ -107,9 +107,3 @@ if st.session_state['generated']:
         # Display user message
         message(st.session_state['past'][i],
                 is_user=True, key=str(i) + '_user')
-
-
-# Add credit
-st.markdown("""
----
-Made with 🤖 by [Austin Johnson](https://github.com/AustonianAI)""")
